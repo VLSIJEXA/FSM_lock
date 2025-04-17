@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: MNIT JAIPUR
+// Engineer:JATIN KATIYAR
 // 
 // Create Date: 04/16/2025 08:45:57 PM
 // Design Name: 
