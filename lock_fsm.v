@@ -21,11 +21,10 @@
 module lock_fsm (
     input clk,
     input rst,
-    input [1:0] in,     // 2-bit input: 00 = '0', 01 = 'a', 10 = 'b'
+    input [1:0] in,     // input: 00 = '0', 01 = 'a', 10 = 'b'
     output reg out
 );
 
-    // State encoding
     parameter IDLE   = 2'b00;
     parameter GOT_A  = 2'b01;
     parameter GOT_B  = 2'b10;
@@ -33,7 +32,6 @@ module lock_fsm (
 
     reg [1:0] current_state, next_state;
 
-    // Sequential block: state transitions
     always @(posedge clk or posedge rst) begin
         if (rst)
             current_state <= IDLE;
@@ -41,7 +39,7 @@ module lock_fsm (
             current_state <= next_state;
     end
 
-    // Output logic: make out a 1-cycle pulse in the UNLOCK state
+    
     always @(posedge clk or posedge rst) begin
         if (rst)
             out <= 0;
@@ -49,7 +47,6 @@ module lock_fsm (
             out <= (next_state == UNLOCK);
     end
 
-    // Next state logic
     always @(*) begin
         case (current_state)
             IDLE: begin
@@ -62,8 +59,8 @@ module lock_fsm (
             GOT_A: begin
                 case (in)
                     2'b10: next_state = GOT_B;  // 'b'
-                    2'b01: next_state = GOT_A;  // more 'a'
-                    default: next_state = GOT_A;
+                    2'b01: next_state = GOT_A;  // multiple 'a'
+                    default: next_state = GOT_A; // '0'
                 endcase
             end
 
