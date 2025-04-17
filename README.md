@@ -1,4 +1,5 @@
 # FSM_lock
+Need to design an FSM-based lock in Verilog. The lock opens with sequences like aabbba, aba, aaaaba, or a0bb0a.aabaa,aabbbbaa 'a' and 'b' can repeat, but after 'b', 'a' appears once to open the lock. '0' means stay in the same state. but these state aab,baa,a0ab,b0a lock not open .
 Problem Statement:
 Design a Finite State Machine (FSM) in Verilog that detects a specific unlock pattern based on three input signals:
 
