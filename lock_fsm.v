@@ -18,77 +18,69 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-
-
 module lock_fsm (
     input clk,
-    input reset,
-    input a,
-    input b,
-    input zero,
-    output reg lock_open
+    input rst,
+    input [1:0] in,     // 2-bit input: 00 = '0', 01 = 'a', 10 = 'b'
+    output reg out
 );
 
-// State encoding
-parameter IDLE   = 2'b00;
-parameter GOT_A  = 2'b01;
-parameter GOT_B  = 2'b10;
-parameter UNLOCK = 2'b11;
+    // State encoding
+    parameter IDLE   = 2'b00;
+    parameter GOT_A  = 2'b01;
+    parameter GOT_B  = 2'b10;
+    parameter UNLOCK = 2'b11;
 
-reg [1:0] current_state, next_state;
+    reg [1:0] current_state, next_state;
 
-// State register
-always @(posedge clk or posedge reset) begin
-    if (reset)
-        current_state <= IDLE;
-    else
-        current_state <= next_state;
-end
+    // Sequential block: state transitions
+    always @(posedge clk or posedge rst) begin
+        if (rst)
+            current_state <= IDLE;
+        else
+            current_state <= next_state;
+    end
 
-// Next state logic
-always @(*) begin
-    next_state = current_state; // default: stay in current state
-    
-    case (current_state)
-        IDLE: begin
-            if (a & ~b & ~zero)
-                next_state = GOT_A;
-            else if ((b | (~a & ~b)) & ~zero)
-                next_state = IDLE;
-        end
+    // Output logic: make out a 1-cycle pulse in the UNLOCK state
+    always @(posedge clk or posedge rst) begin
+        if (rst)
+            out <= 0;
+        else
+            out <= (next_state == UNLOCK);
+    end
 
-        GOT_A: begin
-            if (a & ~b & ~zero)
-                next_state = GOT_A;
-            else if ((b | (~a & ~b)) & ~zero)
-                next_state = GOT_B;
-        end
+    // Next state logic
+    always @(*) begin
+        case (current_state)
+            IDLE: begin
+                case (in)
+                    2'b01: next_state = GOT_A;  // 'a'
+                    default: next_state = IDLE; // '0' or 'b'
+                endcase
+            end
 
-        GOT_B: begin
-            if (a & ~b & ~zero)
-                next_state = UNLOCK;
-            else if ((b | (~a & ~b)) & ~zero)
-                next_state = GOT_B;
-        end
+            GOT_A: begin
+                case (in)
+                    2'b10: next_state = GOT_B;  // 'b'
+                    2'b01: next_state = GOT_A;  // more 'a'
+                    default: next_state = GOT_A;
+                endcase
+            end
 
-        UNLOCK: begin
-            if (a & ~b & ~zero)
-                next_state = GOT_A;
-            else if (~zero)
-                next_state = IDLE;
-        end
-        
-        default: next_state = IDLE;
-    endcase
-end
+            GOT_B: begin
+                case (in)
+                    2'b01: next_state = UNLOCK; // 'a' after 'ab'
+                    2'b10: next_state = GOT_B;  // more 'b'
+                    default: next_state = GOT_B;
+                endcase
+            end
 
-// Output logic
-always @(posedge clk or posedge reset) begin
-    if (reset)
-        lock_open <= 1'b0;
-    else
-        lock_open <= (current_state == GOT_B) & (a & ~b & ~zero);
-end
+            UNLOCK: begin
+                next_state = IDLE; // back to IDLE after unlock
+            end
+
+            default: next_state = IDLE;
+        endcase
+    end
 
 endmodule
-/////////////
